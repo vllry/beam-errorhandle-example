@@ -20,9 +20,14 @@ public class Main {
         Raw2Audit auditTransformer = new Raw2Audit();
         PCollectionTuple auditCollection = auditTransformer.transform(rawAuditCollection);
 
+        /*auditCollection.get(auditTransformer.valid).apply(
+                "WriteAudit",
+                TextIO.write().to("output/audit").withSuffix(".txt")
+        );*/
+
         auditCollection.get(auditTransformer.failures).apply(
-                "WriteToText",
-                TextIO.write().to("audit").withSuffix(".txt")
+                "WriteAuditFailures",
+                TextIO.write().to("output/failures").withSuffix(".txt")
         );
 
         p.run();

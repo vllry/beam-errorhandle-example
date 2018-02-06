@@ -1,5 +1,6 @@
 package errorfilteringdemo;
 
+import errorfilteringdemo.datum.Failure;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
@@ -33,12 +34,12 @@ public class Raw2Audit extends DoFn {
                     auditd.type = regexHelper("type=(.*?)\\s", line);
                     auditd.pid = Integer.parseInt(regexHelper("pid=(.*?)\\s", line));
                     auditd.uid = Integer.parseInt(regexHelper("uid=(.*?)\\s", line));
-                    // Max Integer value is 2,147,483,647.
+                    // Max Integer value is 2,147,483,647. ;)
                     auditd.auid = Integer.parseInt(regexHelper("auid=(.*?)\\s", line));
                 }
                 catch (Throwable throwable) {
-                    System.out.println(throwable.getMessage());
-                    c.output(failures, line);
+                    Failure failure = new Failure(auditd, throwable);
+                    c.output(failures, failure.toString());
                 }
 
                 c.output(auditd);
