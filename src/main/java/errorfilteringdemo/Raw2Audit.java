@@ -6,48 +6,54 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import errorfilteringdemo.datum.Audit;
+import errorfilteringdemo.helpers.MiscHelpers;
 import org.apache.beam.sdk.values.TupleTagList;
 
 
 public class Raw2Audit extends DoFn {
 
-    final TupleTag<Audit> valid = new TupleTag<Audit>(){};
-    final TupleTag<String> failures = new TupleTag<String>(){};
+    private final TupleTag<Audit> validTag = new TupleTag<Audit>(){};
+    private final TupleTag<String> failuresTag = new TupleTag<String>(){};
+    private PCollection<Audit> validPCollection;
+    private PCollection<String> failedPCollection;
 
-    private static String regexHelper(String regex, String text) {
-        Matcher matcher = Pattern.compile(regex).matcher(text);
-        matcher.find();
-        return matcher.group(1);
-    }
-
-    public PCollectionTuple transform(PCollection<String> logStrings) {
-        return logStrings.apply("Create PubSub objects", ParDo.of(new DoFn<String, Audit>() {
+    public Raw2Audit(PCollection<String> logStrings) {
+        PCollectionTuple outputTuple = logStrings.apply("Create PubSub objects", ParDo.of(new DoFn<String, Audit>() {
             @ProcessElement
             public void processElement(ProcessContext c) {
                 String line = c.element();
                 Audit auditd = new Audit();
 
                 try {
-                    auditd.type = regexHelper("type=(.*?)\\s", line);
-                    auditd.pid = Integer.parseInt(regexHelper("pid=(.*?)\\s", line));
-                    auditd.uid = Integer.parseInt(regexHelper("uid=(.*?)\\s", line));
+                    auditd.type = MiscHelpers.regexHelper("type=(.*?)\\s", line);
+                    auditd.pid = Integer.parseInt(MiscHelpers.regexHelper("pid=(.*?)\\s", line));
+                    auditd.uid = Integer.parseInt(MiscHelpers.regexHelper("uid=(.*?)\\s", line));
                     // Max Integer value is 2,147,483,647. ;)
-                    auditd.auid = Integer.parseInt(regexHelper("auid=(.*?)\\s", line));
+                    auditd.auid = Integer.parseInt(MiscHelpers.regexHelper("auid=(.*?)\\s", line));
                 }
                 catch (Throwable throwable) {
                     Failure failure = new Failure(auditd, throwable);
-                    c.output(failures, failure.toString());
+                    c.output(failuresTag, failure.toString());  // TODO: replace with objects.
                 }
 
                 c.output(auditd);
             }
         }).withOutputTags(
-                valid,
-                TupleTagList.of(failures)
+                validTag,
+                TupleTagList.of(failuresTag)
         ));
+
+        this.validPCollection = outputTuple.get(validTag);
+        this.failedPCollection = outputTuple.get(failuresTag);
+    }
+
+    public PCollection<Audit> getValid() {
+        return validPCollection;
+    }
+
+    public PCollection<String> getFailed() {
+        return failedPCollection;
     }
 
 }

@@ -4,7 +4,7 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
+
 
 public class Main {
 
@@ -14,20 +14,19 @@ public class Main {
 
         PCollection<String> rawAuditCollection = p.apply(
                 "Read raw audit logs",
-                TextIO.read().from("./audit.log")
+                TextIO.read().from("./input/audit.log")
         );
 
-        Raw2Audit auditTransformer = new Raw2Audit();
-        PCollectionTuple auditCollection = auditTransformer.transform(rawAuditCollection);
+        Raw2Audit auditSet = new Raw2Audit(rawAuditCollection);
 
         /*auditCollection.get(auditTransformer.valid).apply(
                 "WriteAudit",
                 TextIO.write().to("output/audit").withSuffix(".txt")
         );*/
 
-        auditCollection.get(auditTransformer.failures).apply(
+        auditSet.getFailed().apply(
                 "WriteAuditFailures",
-                TextIO.write().to("output/failures").withSuffix(".txt")
+                TextIO.write().to("./output/failuresTag").withSuffix(".txt")
         );
 
         p.run();

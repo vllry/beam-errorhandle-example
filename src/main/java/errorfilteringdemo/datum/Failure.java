@@ -6,7 +6,7 @@ import java.util.Arrays;
 public class Failure {
 
     private String message;
-    private String stackTrace;  // May want to flatten to a multiline string depending on use case.
+    private String stackTrace;  // May want to expand to an Array/ArrayList depending on use case.
 
     public Failure(Object datum, Throwable thrown) {
         this.message = thrown.toString();
