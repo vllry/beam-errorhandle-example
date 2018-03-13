@@ -11,15 +11,13 @@ import errorfilteringdemo.helpers.MiscHelpers;
 import org.apache.beam.sdk.values.TupleTagList;
 
 
-public class Raw2Audit extends DoFn {
+public class Raw2Audit extends DoFn<String, Audit> {
 
-    private final TupleTag<Audit> validTag = new TupleTag<Audit>(){};
-    private final TupleTag<String> failuresTag = new TupleTag<String>(){};
-    private PCollection<Audit> validPCollection;
-    private PCollection<String> failedPCollection;
+    public static TupleTag<Audit> validTag = new TupleTag<Audit>(){};
+    public static TupleTag<String> failuresTag = new TupleTag<String>(){};
 
-    public Raw2Audit(PCollection<String> logStrings) {
-        PCollectionTuple outputTuple = logStrings.apply("Create PubSub objects", ParDo.of(new DoFn<String, Audit>() {
+    public static PCollectionTuple process(PCollection<String> logStrings) {
+        return logStrings.apply("Create PubSub objects", ParDo.of(new DoFn<String, Audit>() {
             @ProcessElement
             public void processElement(ProcessContext c) {
                 String line = c.element();
@@ -43,17 +41,6 @@ public class Raw2Audit extends DoFn {
                 validTag,
                 TupleTagList.of(failuresTag)
         ));
-
-        this.validPCollection = outputTuple.get(validTag);
-        this.failedPCollection = outputTuple.get(failuresTag);
-    }
-
-    public PCollection<Audit> getValid() {
-        return validPCollection;
-    }
-
-    public PCollection<String> getFailed() {
-        return failedPCollection;
     }
 
 }

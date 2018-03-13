@@ -1,9 +1,12 @@
 package errorfilteringdemo;
 
+import errorfilteringdemo.datum.Audit;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.ToString;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionTuple;
 
 
 public class Main {
@@ -17,14 +20,21 @@ public class Main {
                 TextIO.read().from("./input/audit.log")
         );
 
-        Raw2Audit auditSet = new Raw2Audit(rawAuditCollection);
+        PCollectionTuple auditdCollections = Raw2Audit.process(rawAuditCollection);
+        PCollection<Audit> auditCollection = auditdCollections.get(Raw2Audit.validTag);
+        PCollection<String> auditFailures = auditdCollections.get(Raw2Audit.failuresTag);
 
-        /*auditCollection.get(auditTransformer.valid).apply(
-                "WriteAudit",
-                TextIO.write().to("output/audit").withSuffix(".txt")
-        );*/
+        PCollection<String> auditStrings = auditCollection.apply(
+                "Audit objects to string",
+                ToString.elements()
+        );
 
-        auditSet.getFailed().apply(
+        auditStrings.apply(
+                    "WriteAudit",
+                    TextIO.write().to("./output/audit").withSuffix(".txt")
+        );
+
+        auditFailures.apply(
                 "WriteAuditFailures",
                 TextIO.write().to("./output/failuresTag").withSuffix(".txt")
         );

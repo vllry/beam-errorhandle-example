@@ -1,9 +1,11 @@
 package errorfilteringdemo.datum;
 
 
+import org.apache.beam.sdk.transforms.DoFn;
+
 import java.util.Arrays;
 
-public class Failure {
+public class Failure extends DoFn {
 
     private String message;
     private String stackTrace;  // May want to expand to an Array/ArrayList depending on use case.
