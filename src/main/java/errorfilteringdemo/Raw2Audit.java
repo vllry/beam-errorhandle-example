@@ -14,7 +14,7 @@ import org.apache.beam.sdk.values.TupleTagList;
 public class Raw2Audit extends DoFn<String, Audit> {
 
     public static TupleTag<Audit> validTag = new TupleTag<Audit>(){};
-    public static TupleTag<String> failuresTag = new TupleTag<String>(){};
+    public static TupleTag<Failure> failuresTag = new TupleTag<Failure>(){};
 
     /*
     Take the PCollection of log strings, and output a PCollectionTuple with Audit objects and Failure objects.
@@ -24,22 +24,22 @@ public class Raw2Audit extends DoFn<String, Audit> {
         return logStrings.apply("Create PubSub objects", ParDo.of(new DoFn<String, Audit>() {
             @ProcessElement
             public void processElement(ProcessContext c) {
-                String line = c.element();
+                String logLine = c.element();
                 Audit auditd = new Audit();
 
                 try {
-                    auditd.type = MiscHelpers.regexHelper("type=(.*?)\\s", line);
-                    auditd.pid = Integer.parseInt(MiscHelpers.regexHelper("pid=(.*?)\\s", line));
-                    auditd.uid = Integer.parseInt(MiscHelpers.regexHelper("uid=(.*?)\\s", line));
+                    auditd.type = MiscHelpers.regexHelper("type=(.*?)\\s", logLine);
+                    auditd.pid = Integer.parseInt(MiscHelpers.regexHelper("pid=(.*?)\\s", logLine));
+                    auditd.uid = Integer.parseInt(MiscHelpers.regexHelper("uid=(.*?)\\s", logLine));
                     // Max Integer value is 2,147,483,647. ;)
-                    auditd.auid = Integer.parseInt(MiscHelpers.regexHelper("auid=(.*?)\\s", line));
+                    auditd.auid = Integer.parseInt(MiscHelpers.regexHelper("auid=(.*?)\\s", logLine));
 
                     c.output(auditd);  // The "main" channel doesn't need the TupleTag specified.
 
                 }
                 catch (Throwable throwable) {
-                    Failure failure = new Failure(auditd, throwable);
-                    c.output(failuresTag, failure.toString());  // TODO: replace with objects.
+                    Failure failure = new Failure(logLine, auditd, throwable);
+                    c.output(failuresTag, failure);  // Attach to failure tag.
                 }
 
             }

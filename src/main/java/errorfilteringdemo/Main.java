@@ -1,6 +1,7 @@
 package errorfilteringdemo;
 
 import errorfilteringdemo.datum.Audit;
+import errorfilteringdemo.datum.Failure;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -23,19 +24,19 @@ public class Main {
 
         PCollectionTuple auditdCollections = Raw2Audit.process(rawAuditCollection);
         PCollection<Audit> auditCollection = auditdCollections.get(Raw2Audit.validTag);
-        PCollection<String> auditFailures = auditdCollections.get(Raw2Audit.failuresTag);
+        PCollection<Failure> auditFailures = auditdCollections.get(Raw2Audit.failuresTag);
 
 
 
         // Write out results to files - normally done to a message queue or DB.
 
         auditCollection.apply(ToString.elements()).apply(
-                    "WriteAudit",
+                    "Write Audit",
                     TextIO.write().to("./output/audit").withSuffix(".txt")
         );
 
-        auditFailures.apply(
-                "WriteAuditFailures",
+        auditFailures.apply(ToString.elements()).apply(
+                "Write Audit Failures",
                 TextIO.write().to("./output/failuresTag").withSuffix(".txt")
         );
 
