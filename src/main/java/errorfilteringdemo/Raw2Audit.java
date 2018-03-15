@@ -16,6 +16,10 @@ public class Raw2Audit extends DoFn<String, Audit> {
     public static TupleTag<Audit> validTag = new TupleTag<Audit>(){};
     public static TupleTag<String> failuresTag = new TupleTag<String>(){};
 
+    /*
+    Take the PCollection of log strings, and output a PCollectionTuple with Audit objects and Failure objects.
+    (ProcessElement should be static in Beam 2.3.0+, otherwise you will have problems trying to serialize the transform itself).
+     */
     public static PCollectionTuple process(PCollection<String> logStrings) {
         return logStrings.apply("Create PubSub objects", ParDo.of(new DoFn<String, Audit>() {
             @ProcessElement
@@ -29,13 +33,15 @@ public class Raw2Audit extends DoFn<String, Audit> {
                     auditd.uid = Integer.parseInt(MiscHelpers.regexHelper("uid=(.*?)\\s", line));
                     // Max Integer value is 2,147,483,647. ;)
                     auditd.auid = Integer.parseInt(MiscHelpers.regexHelper("auid=(.*?)\\s", line));
+
+                    c.output(auditd);  // The "main" channel doesn't need the TupleTag specified.
+
                 }
                 catch (Throwable throwable) {
                     Failure failure = new Failure(auditd, throwable);
                     c.output(failuresTag, failure.toString());  // TODO: replace with objects.
                 }
 
-                c.output(auditd);
             }
         }).withOutputTags(
                 validTag,

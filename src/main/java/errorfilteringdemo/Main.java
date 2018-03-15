@@ -13,10 +13,11 @@ public class Main {
 
     public static void main(String[] args) {
 
+        // Create the pipeline.
         Pipeline p = Pipeline.create(PipelineOptionsFactory.create());
 
         PCollection<String> rawAuditCollection = p.apply(
-                "Read raw audit logs",
+                "Read raw auditd logs",
                 TextIO.read().from("./input/audit.log")
         );
 
@@ -24,12 +25,11 @@ public class Main {
         PCollection<Audit> auditCollection = auditdCollections.get(Raw2Audit.validTag);
         PCollection<String> auditFailures = auditdCollections.get(Raw2Audit.failuresTag);
 
-        PCollection<String> auditStrings = auditCollection.apply(
-                "Audit objects to string",
-                ToString.elements()
-        );
 
-        auditStrings.apply(
+
+        // Write out results to files - normally done to a message queue or DB.
+
+        auditCollection.apply(ToString.elements()).apply(
                     "WriteAudit",
                     TextIO.write().to("./output/audit").withSuffix(".txt")
         );
@@ -39,6 +39,9 @@ public class Main {
                 TextIO.write().to("./output/failuresTag").withSuffix(".txt")
         );
 
+
+
+        // Start the pipeline. All other actions are essentially the build the pipeline definition.
         p.run();
     }
 
