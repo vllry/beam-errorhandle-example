@@ -20,4 +20,4 @@ About
 ===
 This is a simple demo of per-element error handling in Apache Beam pipelines. The demo is sparse, but highlights a real-world case of handling critical log streams. This allows for bad data or pipeline bugs to be noticed and handled, without disrupting other operations by crashing the pipeline.
 
-I tried to comment the code well. You can also read more about this example [here](https://vallery.don't.forget.to.update.this)
+I tried to comment the code well. You can also read more about this example [here](https://medium.com/@vallerylancey/error-handling-elements-in-apache-beam-pipelines-fffdea91af2a)
